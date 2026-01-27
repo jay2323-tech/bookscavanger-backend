@@ -45,7 +45,7 @@ export const uploadBooksFromExcel = async (req, res) => {
       event_type: "upload",
       library_id: libraryId,
       metadata: { count: formatted.length },
-    });
+    }).then().catch(console.error);
 
     res.json({
       message: "Books uploaded successfully!",

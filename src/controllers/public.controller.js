@@ -30,7 +30,7 @@ export async function searchBooks(req, res) {
     await supabase.from("analytics").insert({
       event_type: "search",
       metadata: { query: q },
-    });
+    }).then().catch(err => console.error("Analytics error:", err));
 
     booksWithDistance.sort((a, b) => (a.distance || 0) - (b.distance || 0));
     res.json(booksWithDistance);

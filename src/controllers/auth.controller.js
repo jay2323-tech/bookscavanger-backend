@@ -49,7 +49,7 @@ export async function loginLibrary(req, res) {
     await supabase.from("analytics").insert({
       event_type: "login",
       metadata: { email },
-    });
+    }).then().catch(console.error);
 
     res.json({ session: data.session, user: data.user });
   } catch (err) {

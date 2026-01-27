@@ -27,6 +27,8 @@ export const getAdminStats = async (req, res) => {
  */
 export const getAnalytics = async (req, res) => {
   try {
+    console.log("Admin analytics accessed:", new Date().toISOString());
+
     const { data, error } = await supabase
       .from("analytics")
       .select("*")
@@ -35,7 +37,7 @@ export const getAnalytics = async (req, res) => {
 
     if (error) return res.status(500).json({ error: error.message });
 
-    res.json(data);
+    res.json(data || []);
   } catch (err) {
     console.error("Analytics error:", err);
     res.status(500).json({ error: "Failed to fetch analytics" });
