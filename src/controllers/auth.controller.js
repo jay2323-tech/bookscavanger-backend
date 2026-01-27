@@ -45,6 +45,12 @@ export async function loginLibrary(req, res) {
 
     if (error) return res.status(400).json({ error: error.message });
 
+    // 📊 Track login analytics
+    await supabase.from("analytics").insert({
+      event_type: "login",
+      metadata: { email },
+    });
+
     res.json({ session: data.session, user: data.user });
   } catch (err) {
     console.error(err);

@@ -40,6 +40,13 @@ export const uploadBooksFromExcel = async (req, res) => {
       return res.status(400).json({ error: error.message });
     }
 
+    // 📊 Track upload analytics
+    await supabase.from("analytics").insert({
+      event_type: "upload",
+      library_id: libraryId,
+      metadata: { count: formatted.length },
+    });
+
     res.json({
       message: "Books uploaded successfully!",
       count: formatted.length,
