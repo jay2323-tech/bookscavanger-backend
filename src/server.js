@@ -1,42 +1,32 @@
-import cors from "cors";
 import "dotenv/config";
+
+import cors from "cors";
 import express from "express";
 
 import adminRoutes from "./routes/admin.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import libraryRoutes from "./routes/library.routes.js";
 import publicRoutes from "./routes/public.routes.js";
+import uploadRoutes from "./routes/upload.routes.js";
 
 const app = express();
 
-/* 🔐 CORS — MUST BE FIRST */
-app.use(
-  cors({
-    origin: [
-      "http://localhost:3000",
-      "https://lexoria-frontend-phi.vercel.app",
-    ],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
-
-/* Body parsing */
+app.use(cors());
 app.use(express.json());
-
-/* Routes */
-app.use("/api/books", publicRoutes);   // 🔥 IMPORTANT CHANGE
-app.use("/api/auth", authRoutes);
-app.use("/api/library", libraryRoutes);
-app.use("/api/admin", adminRoutes);
 
 /* Health check */
 app.get("/", (req, res) => {
   res.json({ status: "BookScavanger backend running" });
 });
 
-/* Start server */
+/* Routes */
+app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/library", libraryRoutes);
+app.use("/api/books", publicRoutes);
+app.use("/api/library/upload", uploadRoutes);
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Backend running on port ${PORT}`);
-});
+app.listen(PORT, () =>
+  console.log(`🚀 Server running on port ${PORT}`)
+);
