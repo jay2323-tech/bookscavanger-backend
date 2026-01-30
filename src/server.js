@@ -1,14 +1,15 @@
 import cors from "cors";
-import dotenv from "dotenv";
+import "dotenv/config";
 import express from "express";
 
-dotenv.config();
+import adminRoutes from "./routes/admin.routes.js";
+import authRoutes from "./routes/auth.routes.js";
+import libraryRoutes from "./routes/library.routes.js";
+import publicRoutes from "./routes/public.routes.js";
 
-const app = express(); // ✅ app MUST be defined first
+const app = express();
 
-/* -------------------- MIDDLEWARE -------------------- */
-app.use(express.json());
-
+/* 🔐 CORS — MUST BE FIRST */
 app.use(
   cors({
     origin: [
@@ -17,27 +18,25 @@ app.use(
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
   })
 );
 
-/* -------------------- HEALTH CHECK -------------------- */
+/* Body parsing */
+app.use(express.json());
+
+/* Routes */
+app.use("/api/books", publicRoutes);   // 🔥 IMPORTANT CHANGE
+app.use("/api/auth", authRoutes);
+app.use("/api/library", libraryRoutes);
+app.use("/api/admin", adminRoutes);
+
+/* Health check */
 app.get("/", (req, res) => {
   res.json({ status: "BookScavanger backend running" });
 });
 
-/* -------------------- ROUTES -------------------- */
-import authRoutes from "./routes/auth.js";
-import bookRoutes from "./routes/books.js";
-import libraryRoutes from "./routes/library.js";
-
-app.use("/api/books", bookRoutes);
-app.use("/api/auth", authRoutes);
-app.use("/api/library", libraryRoutes);
-
-/* -------------------- SERVER -------------------- */
+/* Start server */
 const PORT = process.env.PORT || 5000;
-
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🚀 Backend running on port ${PORT}`);
 });
