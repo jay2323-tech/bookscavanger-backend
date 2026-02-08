@@ -4,19 +4,25 @@ export const authenticateLibrary = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "Missing or invalid token" });
+    if (!authHeader?.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Missing token" });
     }
 
-    const token = authHeader.replace("Bearer ", "").trim();
+    const token = authHeader.replace("Bearer ", "");
 
+    // ✅ VERIFY SUPABASE TOKEN
     const { data, error } = await supabase.auth.getUser(token);
 
     if (error || !data?.user) {
-      console.error("Supabase auth error:", error);
       return res.status(401).json({ error: "Invalid token" });
     }
 
+    // ✅ ROLE CHECK
+    if (data.user.user_metadata?.role !== "librarian") {
+      return res.status(403).json({ error: "Librarian access only" });
+    }
+
+    // ✅ FETCH LIBRARY RECORD
     const { data: library, error: libError } = await supabase
       .from("libraries")
       .select("*")
@@ -24,14 +30,14 @@ export const authenticateLibrary = async (req, res, next) => {
       .single();
 
     if (libError || !library) {
-      console.error("Library lookup failed:", libError);
       return res.status(403).json({ error: "Library not registered" });
     }
 
+    req.user = data.user;
     req.library = library;
     next();
   } catch (err) {
-    console.error("Auth middleware crash:", err);
-    res.status(401).json({ error: "Unauthorized" });
+    console.error("authenticateLibrary:", err);
+    return res.status(401).json({ error: "Unauthorized" });
   }
 };

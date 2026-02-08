@@ -1,45 +1,45 @@
-import { supabase } from "../config/db.js";
+import { supabaseAdmin } from "../config/db.js";
 
-/**
- * Get platform stats (Admin Dashboard)
- */
 export const getAdminStats = async (req, res) => {
   try {
     const [{ count: libraries }, { count: books }] = await Promise.all([
-      supabase.from("libraries").select("*", { count: "exact", head: true }),
-      supabase.from("books").select("*", { count: "exact", head: true }),
+      supabaseAdmin
+        .from("libraries")
+        .select("*", { count: "exact", head: true }),
+
+      supabaseAdmin
+        .from("books")
+        .select("*", { count: "exact", head: true }),
     ]);
 
-    res.json({
-      totalLibraries: libraries,
-      totalBooks: books,
-      platform: "Lexoria",
+    return res.json({
+      totalLibraries: libraries ?? 0,
+      totalBooks: books ?? 0,
+      platform: "BookScavenger",
       status: "healthy",
     });
   } catch (err) {
-    console.error("Admin stats error:", err);
-    res.status(500).json({ error: "Failed to fetch admin stats" });
+    console.error("getAdminStats error:", err);
+    return res.status(500).json({ error: "Failed to fetch admin stats" });
   }
 };
 
-/**
- * Get recent analytics events
- */
 export const getAnalytics = async (req, res) => {
   try {
-    console.log("Admin analytics accessed:", new Date().toISOString());
-
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("analytics")
       .select("*")
       .order("created_at", { ascending: false })
       .limit(100);
 
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) {
+      console.error("getAnalytics error:", error);
+      return res.status(500).json({ error: error.message });
+    }
 
-    res.json(data || []);
+    return res.json(data || []);
   } catch (err) {
-    console.error("Analytics error:", err);
-    res.status(500).json({ error: "Failed to fetch analytics" });
+    console.error("getAnalytics fatal error:", err);
+    return res.status(500).json({ error: "Failed to fetch analytics" });
   }
 };

@@ -1,59 +1,47 @@
-import crypto from "crypto";
 import { supabase } from "../config/db.js";
 
+/* ============================
+   SIGNUP (LIBRARIAN ONLY)
+   ============================ */
 export async function signupLibrary(req, res) {
   const { name, email, password, latitude, longitude } = req.body;
 
   try {
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    // 1️⃣ Create Supabase user with librarian role
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
-    });
-
-    if (authError) return res.status(400).json({ error: authError.message });
-
-    const userId = authData.user.id;
-
-    const { error: dbError } = await supabase.from("libraries").insert([
-      {
-        name,
-        email,
-        latitude,
-        longitude,
-        supabase_user_id: userId,
-        api_key: crypto.randomUUID(),
+      options: {
+        data: {
+          role: "librarian", // 🔐 role stored in user_metadata
+          name,
+        },
       },
-    ]);
-
-    if (dbError) return res.status(400).json({ error: dbError.message });
-
-    res.json({ message: "Library registered successfully" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Signup failed" });
-  }
-}
-
-export async function loginLibrary(req, res) {
-  const { email, password } = req.body;
-
-  try {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
     });
 
-    if (error) return res.status(400).json({ error: error.message });
+    if (error || !data?.user) {
+      return res.status(400).json({ error: error?.message || "Signup failed" });
+    }
 
-    // 📊 Track login analytics
-    await supabase.from("analytics").insert({
-      event_type: "login",
-      metadata: { email },
-    }).then().catch(console.error);
+    // 2️⃣ Create library record
+    const { error: dbError } = await supabase.from("libraries").insert({
+      name,
+      email,
+      latitude,
+      longitude,
+      supabase_user_id: data.user.id,
+    });
 
-    res.json({ session: data.session, user: data.user });
+    if (dbError) {
+      console.error("Library insert error:", dbError);
+      return res.status(400).json({ error: dbError.message });
+    }
+
+    return res.json({
+      message: "Library registered successfully",
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Login failed" });
+    console.error("signupLibrary:", err);
+    return res.status(500).json({ error: "Signup failed" });
   }
 }
