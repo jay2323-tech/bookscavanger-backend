@@ -3,12 +3,8 @@ import { supabaseAdmin } from "../config/supabase.js";
 export const getAdminStats = async (req, res) => {
   try {
     const [{ count: libraries }, { count: books }] = await Promise.all([
-      supabaseAdmin
-        .from("libraries")
-        .select("*", { count: "exact", head: true }),
-      supabaseAdmin
-        .from("books")
-        .select("*", { count: "exact", head: true }),
+      supabaseAdmin.from("libraries").select("*", { count: "exact", head: true }),
+      supabaseAdmin.from("books").select("*", { count: "exact", head: true }),
     ]);
 
     res.json({
@@ -31,13 +27,12 @@ export const getAnalytics = async (req, res) => {
       .limit(100);
 
     if (error) {
-      console.error("getAnalytics error:", error);
       return res.status(500).json({ error: error.message });
     }
 
     res.json(data || []);
   } catch (err) {
-    console.error("getAnalytics fatal error:", err);
+    console.error("getAnalytics error:", err);
     res.status(500).json({ error: "Failed to fetch analytics" });
   }
 };

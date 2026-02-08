@@ -1,11 +1,6 @@
 import { supabase } from "../config/supabase.js";
 
 export const authenticateAdmin = async (req, res, next) => {
-  // ✅ REQUIRED: allow CORS preflight to pass
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(204);
-  }
-
   try {
     const authHeader = req.headers.authorization;
 
@@ -29,6 +24,6 @@ export const authenticateAdmin = async (req, res, next) => {
     next();
   } catch (err) {
     console.error("authenticateAdmin error:", err);
-    return res.status(500).json({ error: "Authentication failed" });
+    res.status(500).json({ error: "Authentication failed" });
   }
 };

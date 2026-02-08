@@ -10,7 +10,7 @@ import uploadRoutes from "./routes/upload.routes.js";
 
 const app = express();
 
-/* ✅ CORS — SINGLE SOURCE OF TRUTH */
+/* ✅ SINGLE CORS CONFIG — THIS FIXES EVERYTHING */
 app.use(
   cors({
     origin: [
@@ -18,27 +18,23 @@ app.use(
       "https://lexoria-frontend-phi.vercel.app",
     ],
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-/* 📦 Body parser */
 app.use(express.json());
 
-/* 🧪 Health check */
 app.get("/", (req, res) => {
   res.json({ status: "BookScavenger backend running 🚀" });
 });
 
-/* 🛣️ Routes */
 app.use("/api/auth", authRoutes);
 app.use("/api/library", libraryRoutes);
 app.use("/api/books", publicRoutes);
 app.use("/api/library/upload", uploadRoutes);
 app.use("/api/admin", adminRoutes);
 
-/* 🚀 Server */
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
