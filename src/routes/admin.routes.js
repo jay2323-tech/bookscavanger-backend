@@ -3,7 +3,7 @@ import {
     getAdminStats,
     getAnalytics,
 } from "../controllers/admin.controller.js";
-import { authenticateAdmin } from "../middleware/adminAuth.js";
+import { authenticateAdmin } from "../middleware/authenticateAdmin.js";
 
 const router = express.Router();
 
