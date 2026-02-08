@@ -64,6 +64,7 @@ export const getPendingLibrarians = async (req, res) => {
       .order("created_at", { ascending: true });
 
     if (error) throw error;
+
     res.json(data || []);
   } catch (err) {
     console.error("getPendingLibrarians:", err);
@@ -72,30 +73,42 @@ export const getPendingLibrarians = async (req, res) => {
 };
 
 /**
- * ✅ Approve librarian
+ * ✅ Approve librarian (FINAL & CORRECT)
  */
 export const approveLibrarian = async (req, res) => {
   try {
-    const { libraryId, userId } = req.body;
+    const { libraryId } = req.body;
 
-    if (!libraryId || !userId) {
-      return res
-        .status(400)
-        .json({ error: "libraryId and userId are required" });
+    if (!libraryId) {
+      return res.status(400).json({ error: "libraryId required" });
     }
 
-    // 1️⃣ Update Supabase Auth role
-    await supabaseAdmin.auth.admin.updateUserById(userId, {
-      user_metadata: { role: "librarian" },
-    });
+    // 1️⃣ Fetch library
+    const { data: library, error: libErr } = await supabaseAdmin
+      .from("libraries")
+      .select("*")
+      .eq("id", libraryId)
+      .single();
 
-    // 2️⃣ Mark library as approved
-    const { error } = await supabaseAdmin
+    if (libErr || !library) {
+      return res.status(404).json({ error: "Library not found" });
+    }
+
+    // 2️⃣ Update auth user role → librarian
+    if (library.supabase_user_id) {
+      await supabaseAdmin.auth.admin.updateUserById(
+        library.supabase_user_id,
+        {
+          user_metadata: { role: "librarian" },
+        }
+      );
+    }
+
+    // 3️⃣ Approve library
+    await supabaseAdmin
       .from("libraries")
       .update({ approved: true })
       .eq("id", libraryId);
-
-    if (error) throw error;
 
     res.json({ success: true });
   } catch (err) {
