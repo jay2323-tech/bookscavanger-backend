@@ -48,30 +48,37 @@ export const getAnalytics = async (req, res) => {
  */
 export const getPendingLibrarians = async (req, res) => {
   try {
-    const { data, error } = await supabaseAdmin
-      .from("auth.users")
-      .select("id, email, raw_user_meta_data")
-      .eq("raw_user_meta_data->>role", "pending_librarian");
+    const { data, error } =
+      await supabaseAdmin.auth.admin.listUsers({
+        perPage: 1000,
+      });
 
     if (error) {
-      console.error(error);
+      console.error("listUsers error:", error);
       return res.status(500).json({ error: error.message });
     }
 
-    const formatted = data.map((u) => ({
-      id: u.id,
-      email: u.email,
-      name: u.raw_user_meta_data?.name || "Unknown",
-      latitude: u.raw_user_meta_data?.latitude || null,
-      longitude: u.raw_user_meta_data?.longitude || null,
-    }));
+    const pending = data.users
+      .filter(
+        (u) => u.user_metadata?.role === "pending_librarian"
+      )
+      .map((u) => ({
+        id: u.id,
+        email: u.email,
+        name: u.user_metadata?.name || "Unknown",
+        latitude: u.user_metadata?.latitude || null,
+        longitude: u.user_metadata?.longitude || null,
+        created_at: u.created_at,
+      }));
 
-    res.json(formatted);
+    res.json(pending);
   } catch (err) {
-    console.error("getPendingLibrarians error:", err);
+    console.error("getPendingLibrarians fatal:", err);
     res.status(500).json({ error: "Failed to fetch pending librarians" });
   }
 };
+
+
 
 /**
  * ✅ Approve librarian
@@ -85,14 +92,14 @@ export const approveLibrarian = async (req, res) => {
     }
 
     // 1️⃣ Fetch user
-    const { data: userData, error: userErr } =
+    const { data, error } =
       await supabaseAdmin.auth.admin.getUserById(userId);
 
-    if (userErr || !userData.user) {
+    if (error || !data.user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const meta = userData.user.user_metadata;
+    const meta = data.user.user_metadata;
 
     // 2️⃣ Update role → librarian
     const { error: updateErr } =
