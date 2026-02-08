@@ -10,7 +10,7 @@ import uploadRoutes from "./routes/upload.routes.js";
 
 const app = express();
 
-/* ✅ SINGLE CORS CONFIG — THIS FIXES EVERYTHING */
+/* ✅ SINGLE CORS CONFIG */
 app.use(
   cors({
     origin: [
@@ -18,7 +18,6 @@ app.use(
       "https://lexoria-frontend-phi.vercel.app",
     ],
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );

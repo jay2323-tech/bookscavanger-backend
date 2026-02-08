@@ -1,10 +1,15 @@
 import { supabase } from "../config/supabase.js";
 
 export const authenticateAdmin = async (req, res, next) => {
+  // ✅ allow CORS preflight
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+
   try {
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return res.status(401).json({ error: "Missing token" });
     }
 
@@ -23,7 +28,7 @@ export const authenticateAdmin = async (req, res, next) => {
     req.admin = data.user;
     next();
   } catch (err) {
-    console.error("authenticateAdmin error:", err);
+    console.error("authenticateAdmin:", err);
     res.status(500).json({ error: "Authentication failed" });
   }
 };
