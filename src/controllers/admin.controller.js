@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "../config/db.js";
+import { supabaseAdmin } from "../config/supabase.js";
 
 export const getAdminStats = async (req, res) => {
   try {
@@ -6,21 +6,19 @@ export const getAdminStats = async (req, res) => {
       supabaseAdmin
         .from("libraries")
         .select("*", { count: "exact", head: true }),
-
       supabaseAdmin
         .from("books")
         .select("*", { count: "exact", head: true }),
     ]);
 
-    return res.json({
+    res.json({
       totalLibraries: libraries ?? 0,
       totalBooks: books ?? 0,
-      platform: "BookScavenger",
       status: "healthy",
     });
   } catch (err) {
     console.error("getAdminStats error:", err);
-    return res.status(500).json({ error: "Failed to fetch admin stats" });
+    res.status(500).json({ error: "Failed to fetch stats" });
   }
 };
 
@@ -37,9 +35,9 @@ export const getAnalytics = async (req, res) => {
       return res.status(500).json({ error: error.message });
     }
 
-    return res.json(data || []);
+    res.json(data || []);
   } catch (err) {
     console.error("getAnalytics fatal error:", err);
-    return res.status(500).json({ error: "Failed to fetch analytics" });
+    res.status(500).json({ error: "Failed to fetch analytics" });
   }
 };
