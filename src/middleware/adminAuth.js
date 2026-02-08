@@ -1,7 +1,11 @@
-// src/middleware/adminAuth.js
-import { supabaseAdmin } from "../config/db.js";
+import { supabase } from "../config/db.js";
 
 export const authenticateAdmin = async (req, res, next) => {
+  // ✅ IMPORTANT: allow CORS preflight to pass
+  if (req.method === "OPTIONS") {
+    return next();
+  }
+
   try {
     const authHeader = req.headers.authorization;
 
@@ -11,8 +15,7 @@ export const authenticateAdmin = async (req, res, next) => {
 
     const token = authHeader.replace("Bearer ", "");
 
-    // ✅ ONLY service role can validate JWT server-side
-    const { data, error } = await supabaseAdmin.auth.getUser(token);
+    const { data, error } = await supabase.auth.getUser(token);
 
     if (error || !data?.user) {
       return res.status(401).json({ error: "Invalid token" });
