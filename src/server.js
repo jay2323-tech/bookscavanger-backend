@@ -15,12 +15,14 @@ app.use(
   cors({
     origin: [
       "http://localhost:3000",
-      "https://lexoria-frontend-ph.vercel.app",
+      "https://lexoria-frontend-phi.vercel.app",
     ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
 
 /* Body parser */
 app.use(express.json());
