@@ -9,7 +9,6 @@ import { authenticateLibrary } from "../middleware/authenticateLibrary.js";
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
 
-// 📚 Librarian-only routes
 router.get("/my-books", authenticateLibrary, getMyBooks);
 
 router.post(

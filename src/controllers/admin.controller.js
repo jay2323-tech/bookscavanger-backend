@@ -1,5 +1,8 @@
 import { supabaseAdmin } from "../config/supabase.js";
 
+/**
+ * 📊 Admin stats
+ */
 export const getAdminStats = async (req, res) => {
   try {
     const [{ count: libraries }, { count: books }] = await Promise.all([
@@ -18,6 +21,9 @@ export const getAdminStats = async (req, res) => {
   }
 };
 
+/**
+ * 📈 Analytics
+ */
 export const getAnalytics = async (req, res) => {
   try {
     const { data, error } = await supabaseAdmin
@@ -34,5 +40,85 @@ export const getAnalytics = async (req, res) => {
   } catch (err) {
     console.error("getAnalytics error:", err);
     res.status(500).json({ error: "Failed to fetch analytics" });
+  }
+};
+
+/**
+ * ⏳ Get pending librarians
+ */
+export const getPendingLibrarians = async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("auth.users")
+      .select("id, email, raw_user_meta_data")
+      .eq("raw_user_meta_data->>role", "pending_librarian");
+
+    if (error) {
+      console.error(error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    const formatted = data.map((u) => ({
+      id: u.id,
+      email: u.email,
+      name: u.raw_user_meta_data?.name || "Unknown",
+      latitude: u.raw_user_meta_data?.latitude || null,
+      longitude: u.raw_user_meta_data?.longitude || null,
+    }));
+
+    res.json(formatted);
+  } catch (err) {
+    console.error("getPendingLibrarians error:", err);
+    res.status(500).json({ error: "Failed to fetch pending librarians" });
+  }
+};
+
+/**
+ * ✅ Approve librarian
+ */
+export const approveLibrarian = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: "userId required" });
+    }
+
+    // 1️⃣ Fetch user
+    const { data: userData, error: userErr } =
+      await supabaseAdmin.auth.admin.getUserById(userId);
+
+    if (userErr || !userData.user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const meta = userData.user.user_metadata;
+
+    // 2️⃣ Update role → librarian
+    const { error: updateErr } =
+      await supabaseAdmin.auth.admin.updateUserById(userId, {
+        user_metadata: {
+          ...meta,
+          role: "librarian",
+        },
+      });
+
+    if (updateErr) {
+      return res.status(500).json({ error: updateErr.message });
+    }
+
+    // 3️⃣ Create library record
+    await supabaseAdmin.from("libraries").insert({
+      name: meta.name,
+      supabase_user_id: userId,
+      latitude: meta.latitude,
+      longitude: meta.longitude,
+      approved: true,
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("approveLibrarian error:", err);
+    res.status(500).json({ error: "Approval failed" });
   }
 };
