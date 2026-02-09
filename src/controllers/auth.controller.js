@@ -1,6 +1,13 @@
 import { supabaseAdmin } from "../config/supabase.js";
 
+/**
+ * 📚 Librarian Signup Controller
+ * PUBLIC endpoint — NO AUTH required
+ */
 export async function signupLibrary(req, res) {
+  // 🛠️ TEMP DEBUG — confirms request is reaching backend
+  console.log("📦 Signup request body:", req.body);
+
   const { name, email, password, latitude, longitude } = req.body;
 
   // 🛑 Validation
@@ -11,22 +18,32 @@ export async function signupLibrary(req, res) {
   }
 
   try {
-    // 1️⃣ Create Auth User (fires Supabase trigger)
-    const { data, error } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: {
-        role: "librarian",
-        name,
-      },
-    });
+    /**
+     * 1️⃣ Create Supabase Auth User
+     * Uses SERVICE ROLE KEY
+     * Triggers handle_new_user() SQL trigger
+     */
+    const { data, error: authError } =
+      await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          role: "librarian",
+          name,
+        },
+      });
 
-    if (error) throw error;
+    if (authError) {
+      console.error("❌ Supabase auth error:", authError.message);
+      throw authError;
+    }
 
     const userId = data.user.id;
 
-    // 2️⃣ Insert Library record
+    /**
+     * 2️⃣ Insert Library Record
+     */
     const { error: libError } = await supabaseAdmin
       .from("libraries")
       .insert({
@@ -38,20 +55,25 @@ export async function signupLibrary(req, res) {
         approved: false,
       });
 
-    // 3️⃣ Rollback if library insert fails
+    /**
+     * 3️⃣ Rollback if library insert fails
+     */
     if (libError) {
+      console.error("❌ Library insert error:", libError.message);
       await supabaseAdmin.auth.admin.deleteUser(userId);
       throw libError;
     }
 
-    // ✅ Success
+    /**
+     * ✅ SUCCESS
+     */
     return res.status(201).json({
-      message: "Librarian registered. Awaiting approval.",
+      message: "Librarian registered successfully. Awaiting approval.",
     });
   } catch (err) {
     console.error("❌ Librarian signup error:", err.message);
 
-    // Optional: better error for duplicate email
+    // Duplicate email safeguard
     if (err.message?.toLowerCase().includes("already")) {
       return res.status(409).json({
         error: "User already exists with this email.",
@@ -60,6 +82,7 @@ export async function signupLibrary(req, res) {
 
     return res.status(500).json({
       error: "Signup failed",
+      details: err.message,
     });
   }
 }
