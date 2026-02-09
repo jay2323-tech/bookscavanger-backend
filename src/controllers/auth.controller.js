@@ -1,9 +1,6 @@
 import { supabaseAdmin } from "../config/supabase.js";
 
 export async function signupLibrary(req, res) {
-  // 🔍 TEMP DEBUG LOG (REMOVE AFTER CONFIRMING)
-  console.log("📦 Signup request body:", req.body);
-
   const { name, email, password, latitude, longitude } = req.body;
 
   // 🛑 Validation
@@ -14,7 +11,7 @@ export async function signupLibrary(req, res) {
   }
 
   try {
-    // 1️⃣ Create Auth User (fires trigger)
+    // 1️⃣ Create Auth User (fires Supabase trigger)
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -54,9 +51,15 @@ export async function signupLibrary(req, res) {
   } catch (err) {
     console.error("❌ Librarian signup error:", err.message);
 
+    // Optional: better error for duplicate email
+    if (err.message?.toLowerCase().includes("already")) {
+      return res.status(409).json({
+        error: "User already exists with this email.",
+      });
+    }
+
     return res.status(500).json({
       error: "Signup failed",
-      details: err.message,
     });
   }
 }
