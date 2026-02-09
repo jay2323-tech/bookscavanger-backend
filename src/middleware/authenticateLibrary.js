@@ -1,26 +1,59 @@
-import { supabaseAdmin } from "../config/supabase.js";
+import { supabase } from "../config/supabase.js";
 
 export async function authenticateLibrary(req, res, next) {
-  const token = req.headers.authorization?.split(" ")[1];
-  if (!token) return res.status(401).json({ error: "Missing token" });
+  // Allow preflight requests
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
 
-  const { data, error } = await supabaseAdmin.auth.getUser(token);
-  if (error || !data.user)
-    return res.status(401).json({ error: "Invalid session" });
+  const authHeader = req.headers.authorization;
 
-  if (data.user.user_metadata?.role !== "librarian")
-    return res.status(403).json({ error: "Librarian access only" });
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({
+      error: "This endpoint requires a valid Bearer token",
+    });
+  }
 
-  const { data: library } = await supabaseAdmin
+  const token = authHeader.split(" ")[1];
+
+  // Validate session
+  const { data, error } = await supabase.auth.getUser(token);
+
+  if (error || !data?.user) {
+    return res.status(401).json({
+      error: "Invalid or expired session",
+    });
+  }
+
+  // Check role
+  if (data.user.user_metadata?.role !== "librarian") {
+    return res.status(403).json({
+      error: "Librarian access only",
+    });
+  }
+
+  // Fetch library record
+  const { data: library, error: libError } = await supabase
     .from("libraries")
     .select("*")
     .eq("supabase_user_id", data.user.id)
     .single();
 
-  if (!library || !library.approved)
-    return res.status(403).json({ error: "Library not approved" });
+  if (libError || !library) {
+    return res.status(404).json({
+      error: "Library record not found",
+    });
+  }
 
+  if (!library.approved) {
+    return res.status(403).json({
+      error: "Library not approved yet",
+    });
+  }
+
+  // Attach context
   req.user = data.user;
   req.library = library;
+
   next();
 }
