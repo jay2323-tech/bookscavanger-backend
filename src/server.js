@@ -6,11 +6,12 @@ import adminRoutes from "./routes/admin.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import libraryRoutes from "./routes/library.routes.js";
 import publicRoutes from "./routes/public.routes.js";
-import uploadRoutes from "./routes/upload.routes.js";
 
 const app = express();
 
-/* ✅ SINGLE CORS CONFIG */
+/* ============================
+   GLOBAL MIDDLEWARE
+   ============================ */
 app.use(
   cors({
     origin: [
@@ -24,16 +25,29 @@ app.use(
 
 app.use(express.json());
 
-app.get("/", (req, res) => {
+/* ============================
+   HEALTH CHECK
+   ============================ */
+app.get("/", (_req, res) => {
   res.json({ status: "BookScavenger backend running 🚀" });
 });
 
-app.use("/api/auth", authRoutes);
-app.use("/api/library", libraryRoutes);
-app.use("/api/books", publicRoutes);
-app.use("/api/library/upload", uploadRoutes);
-app.use("/api/admin", adminRoutes);
+/* ============================
+   PUBLIC ROUTES (NO AUTH)
+   ============================ */
+app.use("/api/auth", authRoutes);     // ✅ signup/login MUST be public
+app.use("/api/books", publicRoutes);  // ✅ browsing is public
 
+/* ============================
+   PROTECTED ROUTES
+   ============================ */
+
+app.use("/api/library", libraryRoutes);    // 🔒 PROTECTED inside routes
+app.use("/api/admin", adminRoutes);        // 🔒 PROTECTED inside routes
+
+/* ============================
+   START SERVER
+   ============================ */
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);

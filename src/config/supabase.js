@@ -1,20 +1,20 @@
 import { createClient } from "@supabase/supabase-js";
+import "dotenv/config";
 
-/**
- * Public client – token validation
- */
-export const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-);
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-/**
- * Admin client – REQUIRED for auth.admin.*
- */
-export const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-  {
-    auth: { persistSession: false },
+if (!supabaseServiceKey) {
+  console.error("❌ MISSING SUPABASE_SERVICE_ROLE_KEY");
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Use this ONLY for backend-side user creation (Librarians/Admins)
+export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
   }
-);
+});
