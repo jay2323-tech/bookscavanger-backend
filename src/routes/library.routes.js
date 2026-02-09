@@ -1,8 +1,5 @@
 import express from "express";
-import {
-  addBook,
-  getLibraryDashboard,
-} from "../controllers/library.controller.js";
+import { addBook, getLibraryDashboard, } from "../controllers/library.controller.js";
 import { authenticateLibrary } from "../middleware/authenticateLibrary.js";
 
 const router = express.Router();
