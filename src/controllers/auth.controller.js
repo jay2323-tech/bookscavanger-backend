@@ -4,7 +4,14 @@ import { supabaseAdmin } from "../config/supabase.js";
    SIGNUP (LIBRARIAN ONLY)
    ============================ */
 export async function signupLibrary(req, res) {
-  const { name, email, password, latitude, longitude } = req.body;
+  const {
+  name,
+  email,
+  password,
+  latitude = null,
+  longitude = null,
+} = req.body;
+
 
   if (!name || !email || !password) {
     return res.status(400).json({ error: "Missing required fields" });

@@ -4,8 +4,8 @@ import { signupLibrary } from "../controllers/auth.controller.js";
 const router = express.Router();
 
 /**
- * Librarian signup only
- * Auth (login / Google) is handled by Supabase on frontend
+ * PUBLIC endpoint
+ * ❌ NO auth middleware here
  */
 router.post("/signup", signupLibrary);
 
