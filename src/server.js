@@ -11,7 +11,7 @@ const app = express();
 
 /* ============================
    GLOBAL MIDDLEWARE
-   ============================ */
+============================ */
 app.use(
   cors({
     origin: [
@@ -27,27 +27,24 @@ app.use(express.json());
 
 /* ============================
    HEALTH CHECK
-   ============================ */
+============================ */
 app.get("/", (_req, res) => {
   res.json({ status: "BookScavenger backend running 🚀" });
 });
 
 /* ============================
-   PUBLIC ROUTES (NO AUTH)
-   ============================ */
-app.use("/api/auth", authRoutes);      // ✅ PUBLIC
-app.use("/api/books", publicRoutes);   // ✅ PUBLIC
+   ROUTES
+============================ */
+app.use("/api/auth", authRoutes);
+app.use("/api/books", publicRoutes);
+app.use("/api/library", libraryRoutes);
+app.use("/api/admin", adminRoutes);
 
 /* ============================
-   PROTECTED ROUTES
-   ============================ */
-app.use("/api/library", libraryRoutes); // 🔒 librarian only
-app.use("/api/admin", adminRoutes);     // 🔒 admin only
+   START SERVER (IMPORTANT)
+============================ */
+const PORT = process.env.PORT || 8080;
 
-/* ============================
-   START SERVER
-   ============================ */
-const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });

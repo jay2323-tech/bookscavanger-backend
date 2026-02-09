@@ -5,8 +5,10 @@ import { supabaseAdmin } from "../config/supabase.js";
  * PUBLIC endpoint — NO AUTH required
  */
 export async function signupLibrary(req, res) {
-  // 🛠️ TEMP DEBUG — confirms request is reaching backend
-  console.log("📦 Signup request body:", req.body);
+  // 🛠️ TEMP DEBUG — confirms request is reaching backend (dev-only, non-sensitive)
+  if (process.env.NODE_ENV === 'development') {
+    console.log("📦 Signup request received");
+  }
 
   const { name, email, password, latitude, longitude } = req.body;
 
