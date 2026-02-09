@@ -3,7 +3,7 @@ import { signupLibrary } from "../controllers/auth.controller.js";
 
 const router = express.Router();
 
-// ✅ PUBLIC — NO AUTH MIDDLEWARE
+// 🚨 NO middleware here
 router.post("/signup", signupLibrary);
 
 export default router;

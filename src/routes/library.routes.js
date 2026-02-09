@@ -7,7 +7,6 @@ import { authenticateLibrary } from "../middleware/authenticateLibrary.js";
 
 const router = express.Router();
 
-// 🔒 Protected routes ONLY
 router.get("/dashboard", authenticateLibrary, getLibraryDashboard);
 router.post("/books", authenticateLibrary, addBook);
 

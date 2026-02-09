@@ -33,7 +33,7 @@ export async function authenticateLibrary(req, res, next) {
 
     const { data: library, error: libError } = await supabase
       .from("libraries")
-      .select("id, approved")
+      .select("id, approved") //
       .eq("supabase_user_id", data.user.id)
       .single();
 
