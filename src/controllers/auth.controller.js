@@ -1,4 +1,4 @@
-import { supabase } from "../config/db.js";
+import { supabaseAdmin } from "../config/supabase.js";
 
 /* ============================
    SIGNUP (LIBRARIAN ONLY)
@@ -6,39 +6,64 @@ import { supabase } from "../config/db.js";
 export async function signupLibrary(req, res) {
   const { name, email, password, latitude, longitude } = req.body;
 
+  if (!name || !email || !password) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
   try {
-    // 1️⃣ Create Supabase user with librarian role
-    const { data, error } = await supabase.auth.signUp({
+    // 0️⃣ Prevent duplicate library email
+    const { data: existing } = await supabaseAdmin
+      .from("libraries")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (existing) {
+      return res.status(409).json({ error: "Library already registered" });
+    }
+
+    // 1️⃣ Create Supabase user (ADMIN)
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      options: {
-        data: {
-          role: "librarian", // 🔐 role stored in user_metadata
-          name,
-        },
+      email_confirm: true,
+      user_metadata: {
+        role: "librarian", // MUST match enum
+        name,
       },
     });
 
     if (error || !data?.user) {
+      console.error("Auth create error:", error);
       return res.status(400).json({ error: error?.message || "Signup failed" });
     }
 
-    // 2️⃣ Create library record
-    const { error: dbError } = await supabase.from("libraries").insert({
-      name,
-      email,
-      latitude,
-      longitude,
-      supabase_user_id: data.user.id,
-    });
+    const userId = data.user.id;
+
+    // 2️⃣ Create library (pending approval)
+    const { error: dbError } = await supabaseAdmin
+      .from("libraries")
+      .insert({
+        name,
+        email,
+        latitude: latitude ?? null,
+        longitude: longitude ?? null,
+        supabase_user_id: userId,
+        approved: false,
+      });
 
     if (dbError) {
       console.error("Library insert error:", dbError);
+
+      // 🔁 Rollback auth user
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+
       return res.status(400).json({ error: dbError.message });
     }
 
-    return res.json({
-      message: "Library registered successfully",
+    return res.status(201).json({
+      message: "Library registered successfully. Awaiting admin approval.",
+      userId,
     });
   } catch (err) {
     console.error("signupLibrary:", err);
