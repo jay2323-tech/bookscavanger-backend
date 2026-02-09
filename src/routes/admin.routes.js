@@ -9,11 +9,8 @@ import { authenticateAdmin } from "../middleware/authenticateAdmin.js";
 
 const router = express.Router();
 
-/* 🔐 Protected admin routes */
 router.get("/stats", authenticateAdmin, getAdminStats);
 router.get("/analytics", authenticateAdmin, getAnalytics);
-
-/* 🧑‍🏫 Librarian approvals */
 router.get("/pending-librarians", authenticateAdmin, getPendingLibrarians);
 router.post("/approve-librarian", authenticateAdmin, approveLibrarian);
 
