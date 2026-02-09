@@ -1,78 +1,62 @@
 import { supabaseAdmin } from "../config/supabase.js";
 
-/**
- * 📚 Librarian Signup Controller
- * Handles Auth creation, Profile triggering, and Library table insertion.
- */
 export async function signupLibrary(req, res) {
+  // 🔍 TEMP DEBUG LOG (REMOVE AFTER CONFIRMING)
+  console.log("📦 Signup request body:", req.body);
+
   const { name, email, password, latitude, longitude } = req.body;
 
-  // 1. Validation: Ensure required fields are present
+  // 🛑 Validation
   if (!name || !email || !password) {
-    return res.status(400).json({ 
-      error: "Missing required fields: name, email, and password are required." 
+    return res.status(400).json({
+      error: "Missing required fields: name, email, and password are required.",
     });
   }
 
   try {
-    // 2. Create Auth User - This fires the handle_new_user() trigger automatically
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    // 1️⃣ Create Auth User (fires trigger)
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
-      user_metadata: { 
-        role: "librarian", 
-        name: name // Used by the trigger to populate public.profiles.name
-      }
+      user_metadata: {
+        role: "librarian",
+        name,
+      },
     });
 
-    // Enhanced Error Handling: Specifically catches SQL trigger crashes or metadata issues
-    if (authError) {
-      console.error("Auth/Trigger Error:", authError.message);
-      return res.status(400).json({ 
-        error: "Database configuration error. Check your SQL trigger columns and RLS.",
-        details: authError.message 
-      });
-    }
+    if (error) throw error;
 
-    const userId = authData.user.id;
+    const userId = data.user.id;
 
-    // 3. Insert into libraries table - Using your verified column names
-    const { error: dbError } = await supabaseAdmin
+    // 2️⃣ Insert Library record
+    const { error: libError } = await supabaseAdmin
       .from("libraries")
-      .insert([{
+      .insert({
+        supabase_user_id: userId,
         name,
         email,
-        latitude: latitude || null,
-        longitude: longitude || null,
-        supabase_user_id: userId, // Match for verified column name
-        approved: false           // Librarian starts as pending
-      }]);
-
-    if (dbError) {
-      console.error("Library Table Error:", dbError.message);
-      
-      // 🔁 Atomic Rollback: Delete the auth user if the library record fails.
-      // This prevents "User already exists" errors on retry.
-      await supabaseAdmin.auth.admin.deleteUser(userId);
-      
-      return res.status(400).json({ 
-        error: "Failed to create library record. Auth user rolled back.",
-        details: dbError.message 
+        latitude: latitude ?? null,
+        longitude: longitude ?? null,
+        approved: false,
       });
+
+    // 3️⃣ Rollback if library insert fails
+    if (libError) {
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      throw libError;
     }
 
-    // 4. Success Response
-    return res.status(201).json({ 
-      message: "Librarian registered successfully. Awaiting admin approval.", 
-      userId: userId 
+    // ✅ Success
+    return res.status(201).json({
+      message: "Librarian registered. Awaiting approval.",
     });
-
   } catch (err) {
-    console.error("Catch Block Error:", err.message);
-    return res.status(500).json({ 
-      error: "An unexpected server error occurred during signup.",
-      details: err.message 
+    console.error("❌ Librarian signup error:", err.message);
+
+    return res.status(500).json({
+      error: "Signup failed",
+      details: err.message,
     });
   }
 }
