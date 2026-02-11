@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "../config/supabase.js";
+import { supabase, supabaseAdmin } from "../config/supabase.js";
 
 export const authenticateAdmin = async (req, res, next) => {
   if (req.method === "OPTIONS") {
@@ -14,31 +14,34 @@ export const authenticateAdmin = async (req, res, next) => {
 
     const token = authHeader.replace("Bearer ", "");
 
-    // 1️⃣ Validate token
-    const { data, error } = await supabaseAdmin.auth.getUser(token);
+    // 1️⃣ Verify JWT
+    const { data: authData, error: authError } =
+      await supabase.auth.getUser(token);
 
-    if (error || !data?.user) {
+    if (authError || !authData?.user) {
       return res.status(401).json({ error: "Invalid token" });
     }
 
-    const userId = data.user.id;
+    const userId = authData.user.id;
 
-    // 2️⃣ Check role from PROFILES table (single source of truth)
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .select("role")
-      .eq("id", userId)
-      .single();
+    // 2️⃣ Fetch profile using SERVICE ROLE (bypass RLS)
+    const { data: profile, error: profileError } =
+      await supabaseAdmin
+        .from("profiles")
+        .select("id, role")
+        .eq("id", userId)
+        .single();
 
     if (profileError || !profile) {
       return res.status(403).json({ error: "Profile not found" });
     }
 
+    // 3️⃣ Check role from DB
     if (profile.role !== "admin") {
       return res.status(403).json({ error: "Admins only" });
     }
 
-    req.admin = data.user;
+    req.admin = profile;
     next();
   } catch (err) {
     console.error("authenticateAdmin:", err);
