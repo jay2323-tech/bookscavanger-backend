@@ -1,7 +1,6 @@
-import { supabase } from "../config/supabase.js";
+import { supabaseAdmin } from "../config/supabase.js";
 
 export const authenticateAdmin = async (req, res, next) => {
-  // ✅ allow CORS preflight
   if (req.method === "OPTIONS") {
     return res.sendStatus(204);
   }
@@ -15,13 +14,27 @@ export const authenticateAdmin = async (req, res, next) => {
 
     const token = authHeader.replace("Bearer ", "");
 
-    const { data, error } = await supabase.auth.getUser(token);
+    // 1️⃣ Validate token
+    const { data, error } = await supabaseAdmin.auth.getUser(token);
 
     if (error || !data?.user) {
       return res.status(401).json({ error: "Invalid token" });
     }
 
-    if (data.user.user_metadata?.role !== "admin") {
+    const userId = data.user.id;
+
+    // 2️⃣ Check role from PROFILES table (single source of truth)
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .single();
+
+    if (profileError || !profile) {
+      return res.status(403).json({ error: "Profile not found" });
+    }
+
+    if (profile.role !== "admin") {
       return res.status(403).json({ error: "Admins only" });
     }
 
@@ -29,6 +42,6 @@ export const authenticateAdmin = async (req, res, next) => {
     next();
   } catch (err) {
     console.error("authenticateAdmin:", err);
-    res.status(500).json({ error: "Authentication failed" });
+    return res.status(500).json({ error: "Authentication failed" });
   }
 };

@@ -6,12 +6,12 @@ import adminRoutes from "./routes/admin.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import libraryRoutes from "./routes/library.routes.js";
 import publicRoutes from "./routes/public.routes.js";
-import uploadRoutes from "./routes/upload.routes.js"; // ✅ ADD THIS
+import uploadRoutes from "./routes/upload.routes.js";
 
 const app = express();
 
 /* ============================
-   GLOBAL MIDDLEWARE (NO AUTH)
+   GLOBAL MIDDLEWARE
    ============================ */
 app.use(
   cors({
@@ -34,22 +34,22 @@ app.get("/", (_req, res) => {
 });
 
 /* ============================
-   PUBLIC ROUTES (NO AUTH)
+   PUBLIC ROUTES
    ============================ */
-app.use("/api/auth", authRoutes);      // ✅ PUBLIC
-app.use("/api/books", publicRoutes);   // ✅ PUBLIC
+app.use("/api/auth", authRoutes);      // (empty for now, safe)
+app.use("/api/books", publicRoutes);   // public browsing
 
 /* ============================
    PROTECTED ROUTES
    ============================ */
-app.use("/api/library", libraryRoutes); // 🔒 librarian-only routes
-app.use("/api/library", uploadRoutes);  // 🔒 upload (protected internally)
-app.use("/api/admin", adminRoutes);     // 🔒 admin-only
+app.use("/api/library", libraryRoutes);
+app.use("/api/library", uploadRoutes);
+app.use("/api/admin", adminRoutes);
 
 /* ============================
    START SERVER
    ============================ */
-const PORT = process.env.PORT || 8080; // Railway requirement
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
