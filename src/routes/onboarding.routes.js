@@ -4,7 +4,7 @@ import { createLibraryOnboarding } from "../controllers/onboarding.controller.js
 
 const router = express.Router();
 
-// 🔐 Librarian onboarding (before approval)
+// POST /api/library/onboarding
 router.post(
     "/onboarding",
     authenticateLibrarianRoleOnly,

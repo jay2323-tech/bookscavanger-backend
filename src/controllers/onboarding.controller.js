@@ -1,9 +1,5 @@
 import { supabaseAdmin } from "../config/supabase.js";
 
-/**
- * 📚 Create Library Onboarding
- * Protected — requires librarian role (not yet approved)
- */
 export async function createLibraryOnboarding(req, res) {
     try {
         const userId = req.user.id;
@@ -15,7 +11,7 @@ export async function createLibraryOnboarding(req, res) {
             });
         }
 
-        // 1️⃣ Check if library already exists
+        // 1️⃣ Prevent duplicate library
         const { data: existingLibrary } = await supabaseAdmin
             .from("libraries")
             .select("id")
@@ -28,7 +24,7 @@ export async function createLibraryOnboarding(req, res) {
             });
         }
 
-        // 2️⃣ Create new library (default approved = false)
+        // 2️⃣ Create library
         const { error: insertError } = await supabaseAdmin
             .from("libraries")
             .insert({

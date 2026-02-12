@@ -8,7 +8,7 @@ export async function authenticateLibrarianRoleOnly(req, res, next) {
 
         const authHeader = req.headers.authorization;
 
-        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        if (!authHeader?.startsWith("Bearer ")) {
             return res.status(401).json({
                 error: "Missing Bearer token",
             });
@@ -28,7 +28,7 @@ export async function authenticateLibrarianRoleOnly(req, res, next) {
 
         const userId = authData.user.id;
 
-        // 2️⃣ Check role from profiles
+        // 2️⃣ Verify role from profiles (SOURCE OF TRUTH)
         const { data: profile, error: profileError } =
             await supabaseAdmin
                 .from("profiles")
