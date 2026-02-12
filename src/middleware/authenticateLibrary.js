@@ -1,8 +1,8 @@
-import { supabase } from "../config/supabase.js";
+import { supabase, supabaseAdmin } from "../config/supabase.js";
 
 export async function authenticateLibrary(req, res, next) {
   try {
-    // Allow CORS preflight
+    // ✅ Allow CORS preflight
     if (req.method === "OPTIONS") {
       return res.sendStatus(204);
     }
@@ -17,29 +17,62 @@ export async function authenticateLibrary(req, res, next) {
 
     const token = authHeader.split(" ")[1];
 
-    const { data, error } = await supabase.auth.getUser(token);
+    // =========================================================
+    // 1️⃣ Validate JWT
+    // =========================================================
+    const { data: authData, error: authError } =
+      await supabase.auth.getUser(token);
 
-    if (error || !data?.user) {
+    if (authError || !authData?.user) {
       return res.status(401).json({
         error: "Invalid or expired session",
       });
     }
 
-    if (data.user.user_metadata?.role !== "librarian") {
+    const userId = authData.user.id;
+
+    // =========================================================
+    // 2️⃣ Check ROLE from profiles table (NOT metadata)
+    //    Use service role to bypass RLS safely
+    // =========================================================
+    const { data: profile, error: profileError } =
+      await supabaseAdmin
+        .from("profiles")
+        .select("role")
+        .eq("id", userId)
+        .single();
+
+    if (profileError || !profile) {
+      return res.status(403).json({
+        error: "Profile not found",
+      });
+    }
+
+    if (profile.role !== "librarian") {
       return res.status(403).json({
         error: "Librarian access only",
       });
     }
 
-    const { data: library, error: libError } = await supabase
-      .from("libraries")
-      .select("id, approved") //
-      .eq("supabase_user_id", data.user.id)
-      .single();
+    // =========================================================
+    // 3️⃣ Check library approval
+    // =========================================================
+    const { data: library, error: libError } =
+      await supabaseAdmin
+        .from("libraries")
+        .select("id, approved, rejected")
+        .eq("supabase_user_id", userId)
+        .single();
 
     if (libError || !library) {
       return res.status(404).json({
         error: "Library record not found",
+      });
+    }
+
+    if (library.rejected) {
+      return res.status(403).json({
+        error: "Library application rejected",
       });
     }
 
@@ -49,12 +82,17 @@ export async function authenticateLibrary(req, res, next) {
       });
     }
 
-    req.user = data.user;
+    // =========================================================
+    // 4️⃣ Attach safe request data
+    // =========================================================
+    req.user = authData.user;
     req.library = library;
 
     next();
   } catch (err) {
     console.error("❌ authenticateLibrary error:", err.message);
-    res.status(500).json({ error: "Authentication failed" });
+    return res.status(500).json({
+      error: "Authentication failed",
+    });
   }
 }
